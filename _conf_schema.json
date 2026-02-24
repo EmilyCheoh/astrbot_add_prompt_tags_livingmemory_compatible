@@ -1,0 +1,182 @@
+{
+    "tag_1": {
+        "description": "标签 1",
+        "hint": "第 1 个注入标签的配置。",
+        "type": "object",
+        "items": {
+            "enabled": {
+                "description": "启用",
+                "hint": "是否启用此标签的注入。",
+                "type": "bool",
+                "default": false
+            },
+            "injection_position": {
+                "description": "注入位置",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 用户消息前；user_message_after: 用户消息后；system_prompt: 追加到系统提示词。",
+                "type": "string",
+                "default": "user_message_after",
+                "options": [
+                    "user_message_before",
+                    "user_message_after",
+                    "system_prompt"
+                ]
+            },
+            "tag_name": {
+                "description": "标签名称",
+                "hint": "标签的 XML 名称，例如 Felis-Abyssalis-Preference 或 Behavior-Guidelines。不需要包含尖括号。",
+                "type": "string",
+                "default": ""
+            },
+            "content": {
+                "description": "标签内容",
+                "hint": "注入到标签中的实际提示词内容。",
+                "type": "string",
+                "default": ""
+            }
+        }
+    },
+    "tag_2": {
+        "description": "标签 2",
+        "hint": "第 2 个注入标签的配置。",
+        "type": "object",
+        "items": {
+            "enabled": {
+                "description": "启用",
+                "hint": "是否启用此标签的注入。",
+                "type": "bool",
+                "default": false
+            },
+            "injection_position": {
+                "description": "注入位置",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 用户消息前；user_message_after: 用户消息后；system_prompt: 追加到系统提示词。",
+                "type": "string",
+                "default": "user_message_after",
+                "options": [
+                    "user_message_before",
+                    "user_message_after",
+                    "system_prompt"
+                ]
+            },
+            "tag_name": {
+                "description": "标签名称",
+                "hint": "标签的 XML 名称，例如 Felis-Abyssalis-Preference 或 Behavior-Guidelines。不需要包含尖括号。",
+                "type": "string",
+                "default": ""
+            },
+            "content": {
+                "description": "标签内容",
+                "hint": "注入到标签中的实际提示词内容。",
+                "type": "string",
+                "default": ""
+            }
+        }
+    },
+    "tag_3": {
+        "description": "标签 3",
+        "hint": "第 3 个注入标签的配置。",
+        "type": "object",
+        "items": {
+            "enabled": {
+                "description": "启用",
+                "hint": "是否启用此标签的注入。",
+                "type": "bool",
+                "default": false
+            },
+            "injection_position": {
+                "description": "注入位置",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 用户消息前；user_message_after: 用户消息后；system_prompt: 追加到系统提示词。",
+                "type": "string",
+                "default": "user_message_after",
+                "options": [
+                    "user_message_before",
+                    "user_message_after",
+                    "system_prompt"
+                ]
+            },
+            "tag_name": {
+                "description": "标签名称",
+                "hint": "标签的 XML 名称，例如 Felis-Abyssalis-Preference 或 Behavior-Guidelines。不需要包含尖括号。",
+                "type": "string",
+                "default": ""
+            },
+            "content": {
+                "description": "标签内容",
+                "hint": "注入到标签中的实际提示词内容。",
+                "type": "string",
+                "default": ""
+            }
+        }
+    },
+    "tag_4": {
+        "description": "标签 4",
+        "hint": "第 4 个注入标签的配置。",
+        "type": "object",
+        "items": {
+            "enabled": {
+                "description": "启用",
+                "hint": "是否启用此标签的注入。",
+                "type": "bool",
+                "default": false
+            },
+            "injection_position": {
+                "description": "注入位置",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 用户消息前；user_message_after: 用户消息后；system_prompt: 追加到系统提示词。",
+                "type": "string",
+                "default": "user_message_after",
+                "options": [
+                    "user_message_before",
+                    "user_message_after",
+                    "system_prompt"
+                ]
+            },
+            "tag_name": {
+                "description": "标签名称",
+                "hint": "标签的 XML 名称，例如 Felis-Abyssalis-Preference 或 Behavior-Guidelines。不需要包含尖括号。",
+                "type": "string",
+                "default": ""
+            },
+            "content": {
+                "description": "标签内容",
+                "hint": "注入到标签中的实际提示词内容。",
+                "type": "string",
+                "default": ""
+            }
+        }
+    },
+    "tag_5": {
+        "description": "标签 5",
+        "hint": "第 5 个注入标签的配置。",
+        "type": "object",
+        "items": {
+            "enabled": {
+                "description": "启用",
+                "hint": "是否启用此标签的注入。",
+                "type": "bool",
+                "default": false
+            },
+            "injection_position": {
+                "description": "注入位置",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 用户消息前；user_message_after: 用户消息后；system_prompt: 追加到系统提示词。",
+                "type": "string",
+                "default": "user_message_after",
+                "options": [
+                    "user_message_before",
+                    "user_message_after",
+                    "system_prompt"
+                ]
+            },
+            "tag_name": {
+                "description": "标签名称",
+                "hint": "标签的 XML 名称，例如 Felis-Abyssalis-Preference 或 Behavior-Guidelines。不需要包含尖括号。",
+                "type": "string",
+                "default": ""
+            },
+            "content": {
+                "description": "标签内容",
+                "hint": "注入到标签中的实际提示词内容。",
+                "type": "string",
+                "default": ""
+            }
+        }
+    }
+}
