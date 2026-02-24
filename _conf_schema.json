@@ -30,7 +30,7 @@
             "content": {
                 "description": "标签内容",
                 "hint": "注入到标签中的实际提示词内容。",
-                "type": "text",
+                "type": "string",
                 "default": ""
             }
         }
@@ -66,7 +66,7 @@
             "content": {
                 "description": "标签内容",
                 "hint": "注入到标签中的实际提示词内容。",
-                "type": "text",
+                "type": "string",
                 "default": ""
             }
         }
@@ -102,7 +102,7 @@
             "content": {
                 "description": "标签内容",
                 "hint": "注入到标签中的实际提示词内容。",
-                "type": "text",
+                "type": "string",
                 "default": ""
             }
         }
@@ -138,7 +138,7 @@
             "content": {
                 "description": "标签内容",
                 "hint": "注入到标签中的实际提示词内容。",
-                "type": "text",
+                "type": "string",
                 "default": ""
             }
         }
@@ -174,7 +174,7 @@
             "content": {
                 "description": "标签内容",
                 "hint": "注入到标签中的实际提示词内容。",
-                "type": "text",
+                "type": "string",
                 "default": ""
             }
         }
