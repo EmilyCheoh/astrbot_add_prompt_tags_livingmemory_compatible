@@ -89,7 +89,12 @@ class PromptTagsPlugin(Star):
                 continue
 
             tag_name = str(slot.get("tag_name", "")).strip()
-            content = str(slot.get("content", "")).strip()
+            content = str(slot.get("content", ""))
+
+            # AstrBot 的 textarea 将用户按 Enter 产生的换行存储为字面的
+            # 两字符序列 "\n"（反斜杠+n），而非真正的换行符。
+            # 需要将其还原为实际换行才能正确注入。
+            content = content.replace("\\n", "\n").strip()
             position = str(
                 slot.get("injection_position", "user_message_after")
             ).strip()
@@ -147,8 +152,8 @@ class PromptTagsPlugin(Star):
 
     @staticmethod
     def _format_tag(tag: dict[str, Any]) -> str:
-        """将标签格式化为 XML 包裹的字符串。"""
-        return f"{tag['header']}\n{tag['content']}\n{tag['footer']}"
+        """将标签格式化为 XML 包裹的字符串，尾部附加换行以与后续内容分隔。"""
+        return f"{tag['header']}\n{tag['content']}\n{tag['footer']}\n"
 
     # -----------------------------------------------------------------------
     # 清理逻辑
