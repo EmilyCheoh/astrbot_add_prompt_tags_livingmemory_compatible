@@ -1,12 +1,17 @@
 """
-PromptTags - 持久化提示词标签注入插件
+PromptTags - 持久化提示词标签注入插件 (LivingMemory 兼容版)
 
 在每一轮 LLM 请求前：
 1. 清理上一轮注入到对话历史中的所有自定义标签
 2. 将当前已启用的标签内容重新注入到指定位置
 
 支持最多 5 个自定义标签，每个标签可独立配置注入位置。
-与 LivingMemory 共存安全：各自使用互不相同的标签名称，清理正则不会交叉匹配。
+
+LivingMemory 兼容策略：
+- 使用 priority=-1000 确保本插件的 on_llm_request 钩子在
+  LivingMemory (priority=0) 之后执行，避免我们注入的标签
+  污染 LivingMemory 的记忆检索查询
+- 各自使用互不相同的标签名称，清理正则不会交叉匹配
 
 F(A) = A(F)
 """
@@ -34,8 +39,8 @@ TAG_NAME_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
     "PromptTags",
     "FelisAbyssalis",
     "持久化提示词标签注入插件 - 自动向 LLM 请求注入自定义标签内容并在下一轮清理",
-    "1.0.0",
-    "",
+    "1.1.0",
+    "https://github.com/EmilyCheoh/astrbot_add_prompt_tags",
 )
 class PromptTagsPlugin(Star):
     """
@@ -287,14 +292,17 @@ class PromptTagsPlugin(Star):
     # 事件钩子
     # -----------------------------------------------------------------------
 
-    @filter.on_llm_request()
+    @filter.on_llm_request(priority=-1000)
     async def handle_inject_tags(
         self, event: AstrMessageEvent, req: ProviderRequest
     ):
         """
-        [事件钩子] 在 LLM 请求前：
+        [事件钩子] 在 LLM 请求前（低优先级，在 LivingMemory 之后执行）：
         1. 清理上一轮注入到对话历史中的所有自定义标签
         2. 将当前已启用的标签内容重新注入到指定位置
+
+        priority=-1000 确保本钩子在 LivingMemory (默认 priority=0)
+        完成记忆检索和注入之后再执行，避免我们的标签污染记忆搜索查询。
         """
         if not self._tags:
             return

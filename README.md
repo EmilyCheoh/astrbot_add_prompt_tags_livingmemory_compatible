@@ -10,6 +10,17 @@
   - `user_message_after` — 注入到用户消息**后面**
   - `system_prompt` — 追加到系统提示词末尾
 - 每轮自动清理上一轮残留的标签内容（包括对话历史中的多模态消息）
+- 与 LivingMemory 插件安全共存，互不干扰
+
+## 与 LivingMemory 的共存
+
+本插件使用 `priority=-1000` 确保 `on_llm_request` 钩子在 LivingMemory（默认 `priority=0`）完成记忆检索和注入之后再执行。这意味着：
+
+1. LivingMemory 先执行，使用纯净的用户消息进行记忆检索
+2. LivingMemory 注入 `<RAG-Faiss-Memory>` 标签
+3. 本插件再注入自定义标签
+
+两个插件使用完全不同的标签名称，各自的清理正则只匹配自己的标签，不会交叉干扰。
 
 ## 安装
 
@@ -58,5 +69,5 @@ Below are the user's preferences. Please keep in mind.
 ## 开发信息
 
 - **作者**: Felis Abyssalis
-- **版本**: 1.0.0
+- **版本**: 1.1.0
 - **依赖**: 无额外依赖，仅使用 AstrBot 内置 API
