@@ -39,8 +39,8 @@ TAG_NAME_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
     "PromptTags",
     "FelisAbyssalis",
     "持久化提示词标签注入插件 - 自动向 LLM 请求注入自定义标签内容并在下一轮清理",
-    "1.1.0",
-    "https://github.com/EmilyCheoh/astrbot_add_prompt_tags",
+    "1.1.1",
+    "https://github.com/EmilyCheoh/astrbot_add_prompt_tags_livingmemory_compatible",
 )
 class PromptTagsPlugin(Star):
     """

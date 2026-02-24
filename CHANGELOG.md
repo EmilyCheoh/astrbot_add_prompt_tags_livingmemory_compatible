@@ -1,7 +1,7 @@
 # Changelog
 
 ## v1.1.1
-changed text to strng.
+changed text to string.
 
 ## v1.1.0
 
