@@ -297,16 +297,58 @@ class PromptTagsPlugin(Star):
     # 事件钩子
     # -----------------------------------------------------------------------
 
+    @filter.on_llm_request(priority=1)
+    async def handle_cleanup_tags(
+        self, event: AstrMessageEvent, req: ProviderRequest
+    ):
+        """
+        [事件钩子 - 清理阶段] 在 LLM 请求前，优先于 LivingMemory 执行。
+
+        仅负责从 req.prompt / req.system_prompt / req.contexts 中
+        清除上一轮注入的旧标签，不做任何新注入。
+
+        priority=1 确保本钩子在 LivingMemory (priority=0) 之前执行。
+        这样做的原因：
+          LivingMemory 的 <RAG-Faiss-Memory> 清理正则使用 DOTALL 非贪婪匹配。
+          若我们的标签内容中包含 <RAG-Faiss-Memory>（作为示例提及，无闭合标签），
+          且该标签被注入在 user_message_before 位置（历史中位于真实 RAG 注入之前），
+          则 LivingMemory 的正则会从示例提及处一直匹配到真实 RAG 的闭合标签，
+          吃掉中间所有内容，导致对话历史被截断。
+          先于 LivingMemory 清理我们的标签，可从根本上避免此误匹配。
+        """
+        if not self._tags:
+            return
+
+        try:
+            session_id = event.unified_msg_origin or "unknown"
+
+            total_removed = 0
+            for tag in self._tags:
+                removed = self._remove_tags_from_context(req, tag)
+                total_removed += removed
+
+            if total_removed > 0:
+                logger.info(
+                    f"[{session_id}] PromptTags [清理阶段]: "
+                    f"已清理 {total_removed} 处历史标签注入片段"
+                )
+
+        except Exception as e:
+            logger.error(
+                f"PromptTags [清理阶段]: 清理时发生错误: {e}",
+                exc_info=True,
+            )
+
     @filter.on_llm_request(priority=-1000)
     async def handle_inject_tags(
         self, event: AstrMessageEvent, req: ProviderRequest
     ):
         """
-        [事件钩子] 在 LLM 请求前（低优先级，在 LivingMemory 之后执行）：
-        1. 清理上一轮注入到对话历史中的所有自定义标签
-        2. 将当前已启用的标签内容重新注入到指定位置
+        [事件钩子 - 注入阶段] 在 LLM 请求前，在 LivingMemory 之后执行。
 
-        priority=-1000 确保本钩子在 LivingMemory (默认 priority=0)
+        仅负责将当前已启用的标签内容注入到指定位置，不做清理。
+
+        priority=-1000 确保本钩子在 LivingMemory (priority=0)
         完成记忆检索和注入之后再执行，避免我们的标签污染记忆搜索查询。
         """
         if not self._tags:
@@ -315,21 +357,7 @@ class PromptTagsPlugin(Star):
         try:
             session_id = event.unified_msg_origin or "unknown"
 
-            # === 阶段 1: 清理所有已注册标签的旧注入 ===
-            total_removed = 0
-            for tag in self._tags:
-                removed = self._remove_tags_from_context(req, tag)
-                total_removed += removed
-
-            if total_removed > 0:
-                logger.info(
-                    f"[{session_id}] PromptTags: "
-                    f"已清理 {total_removed} 处历史标签注入片段"
-                )
-
-            # === 阶段 2: 注入当前标签 ===
-            #
-            # 按位置分组，避免在同一位置多次拼接时出现不必要的换行
+            # 按位置分组
             by_position: dict[str, list[str]] = {
                 "user_message_before": [],
                 "user_message_after": [],
@@ -345,7 +373,7 @@ class PromptTagsPlugin(Star):
                 block = "\n\n".join(by_position["user_message_before"])
                 req.prompt = block + "\n\n" + (req.prompt or "")
                 logger.info(
-                    f"[{session_id}] PromptTags: "
+                    f"[{session_id}] PromptTags [注入阶段]: "
                     f"已向用户消息前注入 "
                     f"{len(by_position['user_message_before'])} 个标签"
                 )
@@ -355,7 +383,7 @@ class PromptTagsPlugin(Star):
                 block = "\n\n".join(by_position["user_message_after"])
                 req.prompt = (req.prompt or "") + "\n\n" + block
                 logger.info(
-                    f"[{session_id}] PromptTags: "
+                    f"[{session_id}] PromptTags [注入阶段]: "
                     f"已向用户消息后注入 "
                     f"{len(by_position['user_message_after'])} 个标签"
                 )
@@ -367,14 +395,14 @@ class PromptTagsPlugin(Star):
                     (req.system_prompt or "") + "\n\n" + block
                 )
                 logger.info(
-                    f"[{session_id}] PromptTags: "
+                    f"[{session_id}] PromptTags [注入阶段]: "
                     f"已向 System Prompt 注入 "
                     f"{len(by_position['system_prompt'])} 个标签"
                 )
 
         except Exception as e:
             logger.error(
-                f"PromptTags: 处理标签注入时发生错误: {e}",
+                f"PromptTags [注入阶段]: 注入时发生错误: {e}",
                 exc_info=True,
             )
 
