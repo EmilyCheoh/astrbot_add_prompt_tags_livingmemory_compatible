@@ -400,30 +400,6 @@ class PromptTagsPlugin(Star):
                     f"{len(by_position['system_prompt'])} 个标签"
                 )
 
-            # --- Debug: 打印请求各部分的字符长度 ---
-            sp_len = len(req.system_prompt) if req.system_prompt else 0
-            pr_len = len(req.prompt) if req.prompt else 0
-            ctx_count = len(req.contexts) if req.contexts else 0
-            ctx_total = 0
-            if req.contexts:
-                for msg in req.contexts:
-                    if isinstance(msg, str):
-                        ctx_total += len(msg)
-                    elif isinstance(msg, dict):
-                        c = msg.get("content", "")
-                        if isinstance(c, str):
-                            ctx_total += len(c)
-                        elif isinstance(c, list):
-                            for p in c:
-                                if isinstance(p, dict) and p.get("type") == "text":
-                                    ctx_total += len(p.get("text", ""))
-            logger.info(
-                f"[{session_id}] PromptTags [DEBUG 请求构成]: "
-                f"system_prompt={sp_len}字 | "
-                f"prompt={pr_len}字 | "
-                f"contexts={ctx_count}条/{ctx_total}字"
-            )
-
         except Exception as e:
             logger.error(
                 f"PromptTags [注入阶段]: 注入时发生错误: {e}",
