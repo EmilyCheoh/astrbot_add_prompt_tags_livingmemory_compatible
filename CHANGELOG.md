@@ -1,5 +1,7 @@
 # Changelog
 
+## march 18 - changes priority
+
 ## v1.1.2
 😿
 

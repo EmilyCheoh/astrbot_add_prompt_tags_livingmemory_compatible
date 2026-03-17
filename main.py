@@ -339,7 +339,7 @@ class PromptTagsPlugin(Star):
                 exc_info=True,
             )
 
-    @filter.on_llm_request(priority=-1000)
+    @filter.on_llm_request(priority=-500)
     async def handle_inject_tags(
         self, event: AstrMessageEvent, req: ProviderRequest
     ):
@@ -348,7 +348,7 @@ class PromptTagsPlugin(Star):
 
         仅负责将当前已启用的标签内容注入到指定位置，不做清理。
 
-        priority=-1000 确保本钩子在 LivingMemory (priority=0)
+        priority=-500 确保本钩子在 LivingMemory (priority=0)
         完成记忆检索和注入之后再执行，避免我们的标签污染记忆搜索查询。
         """
         if not self._tags:
