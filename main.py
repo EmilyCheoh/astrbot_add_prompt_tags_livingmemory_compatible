@@ -381,7 +381,19 @@ class PromptTagsPlugin(Star):
             # --- user_message_after ---
             if by_position["user_message_after"]:
                 block = "\n\n".join(by_position["user_message_after"])
-                req.prompt = (req.prompt or "") + "\n\n" + block
+                prompt = req.prompt or ""
+                # 如果 LivingMemory 已经将 <RAG-Faiss-Memory> 注入到
+                # prompt 末尾，将我们的标签插入到它前面，确保我们的标签
+                # 在 RAG 记忆之前、用户消息之后。
+                rag_marker = "<RAG-Faiss-Memory>"
+                rag_pos = prompt.find(rag_marker)
+                if rag_pos > 0:
+                    # 在 RAG 标签前插入，保留换行分隔
+                    before_rag = prompt[:rag_pos].rstrip()
+                    from_rag = prompt[rag_pos:]
+                    req.prompt = before_rag + "\n\n" + block + "\n\n" + from_rag
+                else:
+                    req.prompt = prompt + "\n\n" + block
                 logger.info(
                     f"[{session_id}] PromptTags [注入阶段]: "
                     f"已向用户消息后注入 "
