@@ -67,7 +67,7 @@ class PromptTagsPlugin(Star):
         self._load_tags()
 
         logger.info(
-            f"PromptTags 插件初始化完成，"
+            f"【PromptTags 提示词注入】插件初始化完成，"
             f"已加载 {len(self._tags)} 个有效标签"
         )
 
@@ -102,20 +102,20 @@ class PromptTagsPlugin(Star):
             # 校验
             if not tag_name:
                 logger.warning(
-                    f"PromptTags: {slot_key} 已启用但标签名称为空，跳过"
+                    f"【PromptTags 提示词注入】: {slot_key} 已启用但标签名称为空，跳过"
                 )
                 continue
 
             if not TAG_NAME_PATTERN.match(tag_name):
                 logger.warning(
-                    f"PromptTags: {slot_key} 标签名称 '{tag_name}' "
+                    f"【PromptTags 提示词注入】: {slot_key} 标签名称 '{tag_name}' "
                     f"包含非法字符（仅允许字母、数字、连字符、下划线），跳过"
                 )
                 continue
 
             if not content:
                 logger.warning(
-                    f"PromptTags: {slot_key} 已启用但内容为空，跳过"
+                    f"【PromptTags 提示词注入】: {slot_key} 已启用但内容为空，跳过"
                 )
                 continue
 
@@ -125,7 +125,7 @@ class PromptTagsPlugin(Star):
                 "system_prompt",
             ):
                 logger.warning(
-                    f"PromptTags: {slot_key} 注入位置 '{position}' 无效，"
+                    f"【PromptTags 提示词注入】: {slot_key} 注入位置 '{position}' 无效，"
                     f"回退到 user_message_after"
                 )
                 position = "user_message_after"
@@ -142,8 +142,8 @@ class PromptTagsPlugin(Star):
             )
 
             logger.info(
-                f"PromptTags: 已加载标签 [{tag_name}] "
-                f"(位置: {position}, 内容长度: {len(content)})"
+                f"【PromptTags 提示词注入】: 已加载标签 [{tag_name}] "
+                f"(位置: {position})"
             )
 
     # -----------------------------------------------------------------------
@@ -329,13 +329,13 @@ class PromptTagsPlugin(Star):
 
             if total_removed > 0:
                 logger.info(
-                    f"[{session_id}] PromptTags [清理阶段]: "
+                    f"[{session_id}] 【PromptTags 提示词注入】[清理阶段]: "
                     f"已清理 {total_removed} 处历史标签注入片段"
                 )
 
         except Exception as e:
             logger.error(
-                f"PromptTags [清理阶段]: 清理时发生错误: {e}",
+                f"【PromptTags 提示词注入】[清理阶段]: 清理时发生错误: {e}",
                 exc_info=True,
             )
 
@@ -373,7 +373,7 @@ class PromptTagsPlugin(Star):
                 block = "\n\n".join(by_position["user_message_before"])
                 req.prompt = block + "\n\n" + (req.prompt or "")
                 logger.info(
-                    f"[{session_id}] PromptTags [注入阶段]: "
+                    f"【PromptTags 提示词注入】[注入阶段]: "
                     f"已向用户消息前注入 "
                     f"{len(by_position['user_message_before'])} 个标签"
                 )
@@ -395,7 +395,7 @@ class PromptTagsPlugin(Star):
                 else:
                     req.prompt = prompt + "\n\n" + block
                 logger.info(
-                    f"[{session_id}] PromptTags [注入阶段]: "
+                    f"【PromptTags 提示词注入】[注入阶段]: "
                     f"已向用户消息后注入 "
                     f"{len(by_position['user_message_after'])} 个标签"
                 )
@@ -407,14 +407,14 @@ class PromptTagsPlugin(Star):
                     (req.system_prompt or "") + "\n\n" + block
                 )
                 logger.info(
-                    f"[{session_id}] PromptTags [注入阶段]: "
+                    f"【PromptTags 提示词注入】[注入阶段]: "
                     f"已向 System Prompt 注入 "
                     f"{len(by_position['system_prompt'])} 个标签"
                 )
 
         except Exception as e:
             logger.error(
-                f"PromptTags [注入阶段]: 注入时发生错误: {e}",
+                f"【PromptTags 提示词注入】[注入阶段]: 注入时发生错误: {e}",
                 exc_info=True,
             )
 
@@ -425,4 +425,4 @@ class PromptTagsPlugin(Star):
     async def terminate(self):
         """插件停止时清理资源。"""
         self._tags = []
-        logger.info("PromptTags 插件已停止")
+        logger.info("【PromptTags 提示词注入】插件已停止")
