@@ -442,11 +442,6 @@ class PromptTagsPlugin(Star):
             return
 
         try:
-            # --- 顶部声明注入 ---
-            if self._disclaimer:
-                req.prompt = self._disclaimer + "\n\n" + (req.prompt or "")
-                logger.debug("【PromptTags 提示词注入】注入顶部声明")
-
             # 按位置分组
             by_position: dict[str, list[str]] = {
                 "user_message_before": [],
@@ -498,6 +493,11 @@ class PromptTagsPlugin(Star):
                     f"【PromptTags 提示词注入】System Prompt 注入 "
                     f"{len(by_position['system_prompt'])} 个标签"
                 )
+
+            # --- 顶部声明注入（最后执行，确保它在 req.prompt 的绝对顶部）---
+            if self._disclaimer:
+                req.prompt = self._disclaimer + "\n\n" + (req.prompt or "")
+                logger.debug("【PromptTags 提示词注入】注入顶部声明")
 
         except Exception as e:
             logger.error(
