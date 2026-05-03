@@ -1,4 +1,23 @@
 {
+    "header_disclaimer": {
+        "description": "顶部声明注入",
+        "hint": "在消息最顶端注入一行纯文本声明（不使用 XML 标签），告知模型后续的标签内容是系统自动注入的、对 Felis Abyssalis 不可见。每轮自动清理。",
+        "type": "object",
+        "items": {
+            "enabled": {
+                "description": "启用",
+                "hint": "是否启用顶部声明注入。",
+                "type": "bool",
+                "default": false
+            },
+            "content": {
+                "description": "声明内容",
+                "hint": "注入到消息最顶端的纯文本声明。",
+                "type": "string",
+                "default": "**ALL XML tags are auto-injected — invisible to Felis Abyssalis.**"
+            }
+        }
+    },
     "tag_1": {
         "description": "标签 1",
         "hint": "第 1 个注入标签的配置。",
@@ -12,7 +31,7 @@
             },
             "injection_position": {
                 "description": "注入位置",
-                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 用户消息前；user_message_after: 用户消息后；system_prompt: 追加到系统提示词。",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后；system_prompt: 追加到系统提示词。",
                 "type": "string",
                 "default": "user_message_after",
                 "options": [
@@ -48,7 +67,7 @@
             },
             "injection_position": {
                 "description": "注入位置",
-                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 用户消息前；user_message_after: 用户消息后；system_prompt: 追加到系统提示词。",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后；system_prompt: 追加到系统提示词。",
                 "type": "string",
                 "default": "user_message_after",
                 "options": [
@@ -84,7 +103,7 @@
             },
             "injection_position": {
                 "description": "注入位置",
-                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 用户消息前；user_message_after: 用户消息后；system_prompt: 追加到系统提示词。",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后；system_prompt: 追加到系统提示词。",
                 "type": "string",
                 "default": "user_message_after",
                 "options": [
@@ -120,7 +139,7 @@
             },
             "injection_position": {
                 "description": "注入位置",
-                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 用户消息前；user_message_after: 用户消息后；system_prompt: 追加到系统提示词。",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后；system_prompt: 追加到系统提示词。",
                 "type": "string",
                 "default": "user_message_after",
                 "options": [
@@ -156,7 +175,7 @@
             },
             "injection_position": {
                 "description": "注入位置",
-                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 用户消息前；user_message_after: 用户消息后；system_prompt: 追加到系统提示词。",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后；system_prompt: 追加到系统提示词。",
                 "type": "string",
                 "default": "user_message_after",
                 "options": [

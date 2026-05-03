@@ -62,18 +62,40 @@ class PromptTagsPlugin(Star):
         self.config = config
         self.context = context
 
-        # 从配置中加载所有标签
+        # 从配置中加载顶部声明和所有标签
+        self._disclaimer: str | None = None
+        self._load_disclaimer()
         self._tags: list[dict[str, Any]] = []
         self._load_tags()
 
         logger.info(
             f"【PromptTags 提示词注入】插件初始化完成，"
             f"已加载 {len(self._tags)} 个有效标签"
+            + (f"，顶部声明已启用" if self._disclaimer else "")
         )
 
     # -----------------------------------------------------------------------
     # 配置加载
     # -----------------------------------------------------------------------
+
+    def _load_disclaimer(self) -> None:
+        """从插件配置中加载顶部声明文本。"""
+        slot = self.config.get("header_disclaimer", {})
+        if not isinstance(slot, dict):
+            return
+
+        if not slot.get("enabled", False):
+            return
+
+        content = str(slot.get("content", "")).strip()
+        if not content:
+            logger.warning(
+                "【PromptTags 提示词注入】: 顶部声明已启用但内容为空，跳过"
+            )
+            return
+
+        content = content.replace("\\n", "\n").strip()
+        self._disclaimer = content
 
     def _load_tags(self) -> None:
         """从插件配置中加载所有已启用且合法的标签定义。"""
@@ -141,10 +163,6 @@ class PromptTagsPlugin(Star):
                 }
             )
 
-            logger.info(
-                f"【PromptTags 提示词注入】: 已加载标签 [{tag_name}] "
-                f"(位置: {position})"
-            )
 
     # -----------------------------------------------------------------------
     # 标签格式化
@@ -294,6 +312,73 @@ class PromptTagsPlugin(Star):
         return removed
 
     # -----------------------------------------------------------------------
+    # 顶部声明清理
+    # -----------------------------------------------------------------------
+
+    def _strip_disclaimer(self, text: str) -> str:
+        """从字符串中移除顶部声明文本。
+
+        使用精确子串匹配（类似世界书去重逻辑），
+        而非正则——因为声明是固定纯文本，不是 XML 结构。
+        """
+        if not self._disclaimer or self._disclaimer not in text:
+            return text
+        cleaned = text.replace(self._disclaimer, "")
+        cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+        return cleaned.strip()
+
+    def _remove_disclaimer_from_context(self, req: ProviderRequest) -> int:
+        """从 ProviderRequest 的所有文本位置中清除顶部声明。"""
+        if not self._disclaimer:
+            return 0
+
+        removed = 0
+        disclaimer = self._disclaimer
+
+        # --- 清理 prompt ---
+        if hasattr(req, "prompt") and isinstance(req.prompt, str):
+            if disclaimer in req.prompt:
+                req.prompt = self._strip_disclaimer(req.prompt)
+                removed += 1
+
+        # --- 清理 system_prompt ---
+        if hasattr(req, "system_prompt") and isinstance(req.system_prompt, str):
+            if disclaimer in req.system_prompt:
+                req.system_prompt = self._strip_disclaimer(req.system_prompt)
+                removed += 1
+
+        # --- 清理 contexts ---
+        if hasattr(req, "contexts") and req.contexts:
+            for i, msg in enumerate(req.contexts):
+                if isinstance(msg, str) and disclaimer in msg:
+                    cleaned = self._strip_disclaimer(msg)
+                    req.contexts[i] = cleaned if cleaned else ""
+                    removed += 1
+                elif isinstance(msg, dict):
+                    content = msg.get("content", "")
+                    if isinstance(content, str) and disclaimer in content:
+                        cleaned = self._strip_disclaimer(content)
+                        msg_copy = msg.copy()
+                        msg_copy["content"] = cleaned
+                        req.contexts[i] = msg_copy
+                        removed += 1
+                    elif isinstance(content, list):
+                        for j, part in enumerate(content):
+                            if (
+                                isinstance(part, dict)
+                                and part.get("type") == "text"
+                                and isinstance(part.get("text"), str)
+                                and disclaimer in part["text"]
+                            ):
+                                cleaned = self._strip_disclaimer(part["text"])
+                                part_copy = part.copy()
+                                part_copy["text"] = cleaned
+                                content[j] = part_copy
+                                removed += 1
+
+        return removed
+
+    # -----------------------------------------------------------------------
     # 事件钩子
     # -----------------------------------------------------------------------
 
@@ -316,21 +401,23 @@ class PromptTagsPlugin(Star):
           吃掉中间所有内容，导致对话历史被截断。
           先于 LivingMemory 清理我们的标签，可从根本上避免此误匹配。
         """
-        if not self._tags:
+        if not self._tags and not self._disclaimer:
             return
 
         try:
-            session_id = event.unified_msg_origin or "unknown"
-
             total_removed = 0
+
+            # 清理顶部声明
+            total_removed += self._remove_disclaimer_from_context(req)
+
+            # 清理 XML 标签
             for tag in self._tags:
                 removed = self._remove_tags_from_context(req, tag)
                 total_removed += removed
 
             if total_removed > 0:
-                logger.info(
-                    f"[{session_id}] 【PromptTags 提示词注入】[清理阶段]: "
-                    f"已清理 {total_removed} 处历史标签注入片段"
+                logger.debug(
+                    f"【PromptTags 提示词注入】清理 {total_removed} 处历史注入"
                 )
 
         except Exception as e:
@@ -351,11 +438,14 @@ class PromptTagsPlugin(Star):
         priority=-500 确保本钩子在 LivingMemory (priority=0)
         完成记忆检索和注入之后再执行，避免我们的标签污染记忆搜索查询。
         """
-        if not self._tags:
+        if not self._tags and not self._disclaimer:
             return
 
         try:
-            session_id = event.unified_msg_origin or "unknown"
+            # --- 顶部声明注入 ---
+            if self._disclaimer:
+                req.prompt = self._disclaimer + "\n\n" + (req.prompt or "")
+                logger.debug("【PromptTags 提示词注入】注入顶部声明")
 
             # 按位置分组
             by_position: dict[str, list[str]] = {
@@ -372,9 +462,8 @@ class PromptTagsPlugin(Star):
             if by_position["user_message_before"]:
                 block = "\n\n".join(by_position["user_message_before"])
                 req.prompt = block + "\n\n" + (req.prompt or "")
-                logger.info(
-                    f"【PromptTags 提示词注入】[注入阶段]: "
-                    f"已向用户消息前注入 "
+                logger.debug(
+                    f"【PromptTags 提示词注入】消息前注入 "
                     f"{len(by_position['user_message_before'])} 个标签"
                 )
 
@@ -394,9 +483,8 @@ class PromptTagsPlugin(Star):
                     req.prompt = before_rag + "\n\n" + block + "\n\n" + from_rag
                 else:
                     req.prompt = prompt + "\n\n" + block
-                logger.info(
-                    f"【PromptTags 提示词注入】[注入阶段]: "
-                    f"已向用户消息后注入 "
+                logger.debug(
+                    f"【PromptTags 提示词注入】消息后注入 "
                     f"{len(by_position['user_message_after'])} 个标签"
                 )
 
@@ -406,9 +494,8 @@ class PromptTagsPlugin(Star):
                 req.system_prompt = (
                     (req.system_prompt or "") + "\n\n" + block
                 )
-                logger.info(
-                    f"【PromptTags 提示词注入】[注入阶段]: "
-                    f"已向 System Prompt 注入 "
+                logger.debug(
+                    f"【PromptTags 提示词注入】System Prompt 注入 "
                     f"{len(by_position['system_prompt'])} 个标签"
                 )
 
