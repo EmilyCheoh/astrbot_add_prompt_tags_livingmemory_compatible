@@ -50,7 +50,7 @@ class PromptTagsPlugin(Star):
     设计原理：
     - 利用 AstrBot 的 on_llm_request 钩子，在 LLM 请求发出前修改
       req.prompt（用户消息）或 req.system_prompt（系统提示词）
-    - 每轮请求前先清理 req.prompt、req.system_prompt、req.contexts
+    - 每轮请求前先清理 req.prompt、req.contexts
       中上一轮注入的标签内容，然后重新注入最新内容
     - 标签名由用户自定义，格式为 <TagName>...</TagName>
     - 与 LivingMemory 互不干扰：LivingMemory 使用 <RAG-Faiss-Memory>
@@ -144,7 +144,6 @@ class PromptTagsPlugin(Star):
             if position not in (
                 "user_message_before",
                 "user_message_after",
-                "system_prompt",
             ):
                 logger.warning(
                     f"【PromptTags 提示词注入】: {slot_key} 注入位置 '{position}' 无效，"
@@ -171,7 +170,7 @@ class PromptTagsPlugin(Star):
     @staticmethod
     def _format_tag(tag: dict[str, Any]) -> str:
         """将标签格式化为 XML 包裹的字符串，尾部附加换行以与后续内容分隔。"""
-        return f"{tag['header']}\n{tag['content']}\n{tag['footer']}\n"
+        return f"{tag['header']}\n{tag['content']}\n{tag['footer']}"
 
     # -----------------------------------------------------------------------
     # 清理逻辑
@@ -389,7 +388,7 @@ class PromptTagsPlugin(Star):
         """
         [事件钩子 - 清理阶段] 在 LLM 请求前，优先于 LivingMemory 执行。
 
-        仅负责从 req.prompt / req.system_prompt / req.contexts 中
+        仅负责从 req.prompt / req.contexts 中
         清除上一轮注入的旧标签，不做任何新注入。
 
         priority=1 确保本钩子在 LivingMemory (priority=0) 之前执行。
@@ -446,7 +445,6 @@ class PromptTagsPlugin(Star):
             by_position: dict[str, list[str]] = {
                 "user_message_before": [],
                 "user_message_after": [],
-                "system_prompt": [],
             }
 
             for tag in self._tags:
@@ -481,17 +479,6 @@ class PromptTagsPlugin(Star):
                 logger.debug(
                     f"【PromptTags 提示词注入】消息后注入 "
                     f"{len(by_position['user_message_after'])} 个标签"
-                )
-
-            # --- system_prompt ---
-            if by_position["system_prompt"]:
-                block = "\n\n".join(by_position["system_prompt"])
-                req.system_prompt = (
-                    (req.system_prompt or "") + "\n\n" + block
-                )
-                logger.debug(
-                    f"【PromptTags 提示词注入】System Prompt 注入 "
-                    f"{len(by_position['system_prompt'])} 个标签"
                 )
 
             # --- 顶部声明注入（最后执行，确保它在 req.prompt 的绝对顶部）---

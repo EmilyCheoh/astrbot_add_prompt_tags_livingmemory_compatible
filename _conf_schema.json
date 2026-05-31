@@ -36,8 +36,7 @@
                 "default": "user_message_after",
                 "options": [
                     "user_message_before",
-                    "user_message_after",
-                    "system_prompt"
+                    "user_message_after"
                 ]
             },
             "tag_name": {

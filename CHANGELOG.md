@@ -1,8 +1,16 @@
 # Changelog
 
-## May 3 - added header message
+## May 31
 
-## march 20 - smart injection ordering
+removed system_prompt injection logic + removed extra `\n`
+
+## May 3
+
+added header message
+
+## march 20 
+
+smart injection ordering
 
 ### Fixed
 - **RAG 注入顺序**: `user_message_after` 注入时，检测 LivingMemory 的 `<RAG-Faiss-Memory>` 是否已存在于 `req.prompt` 中。若存在，将我们的标签插入到 RAG 标签之前而非追加到末尾，确保注入顺序为：用户消息 → 我们的标签 → RAG 记忆。
