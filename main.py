@@ -31,8 +31,8 @@ from astrbot.api.star import Context, Star, register
 MAX_TAGS = 5
 TAG_SLOT_KEYS = [f"tag_{i}" for i in range(1, MAX_TAGS + 1)]
 
-# 用于校验标签名合法性的正则：只允许字母、数字、连字符、下划线
-TAG_NAME_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
+# 用于校验标签名合法性的正则：仅禁止换行和尖括号
+TAG_NAME_PATTERN = re.compile(r"^[^\n\r<>]+$")
 
 
 @register(
@@ -131,7 +131,7 @@ class PromptTagsPlugin(Star):
             if not TAG_NAME_PATTERN.match(tag_name):
                 logger.warning(
                     f"【PromptTags 提示词注入】: {slot_key} 标签名称 '{tag_name}' "
-                    f"包含非法字符（仅允许字母、数字、连字符、下划线），跳过"
+                    f"包含非法字符（不允许换行或尖括号），跳过"
                 )
                 continue
 
