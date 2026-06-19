@@ -428,6 +428,10 @@ class PromptTagsPlugin(Star):
             "removetags",
             "removetag",
             "cleanup",
+            "clearup",
+            "clearall",
+            "removeall",
+            "cleanall"
         },
     )
     async def handle_clear_command(self, event: AstrMessageEvent):
