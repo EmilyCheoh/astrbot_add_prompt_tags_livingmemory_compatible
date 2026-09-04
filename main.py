@@ -475,7 +475,7 @@ class PromptTagsPlugin(Star):
             return
 
         tag_name = self._get_tag_name(slot)
-        display_name = f" <{tag_name}>" if tag_name else ""
+        display_name = f" 《{tag_name}》" if tag_name else ""
 
         # 验证 tag_name
         if not tag_name:
@@ -534,7 +534,7 @@ class PromptTagsPlugin(Star):
 
         tag_name = self._get_tag_name(slot)
         display_name = (
-            f" <{tag_name}>"
+            f" 《{tag_name}》"
             if self._is_tag_name_valid(tag_name)
             else ""
         )
@@ -618,9 +618,9 @@ class PromptTagsPlugin(Star):
 
             # 构建显示名
             if alias and tag_name_valid:
-                display = f"{alias} — <{tag_name}>"
+                display = f"{alias} — 《{tag_name}》"
             elif not alias and tag_name_valid:
-                display = f"{tag_name} — <{tag_name}>"
+                display = f"{tag_name} — 《{tag_name}》"
             elif alias and not tag_name_valid:
                 display = f"{alias} — 未配置"
             else:
@@ -661,7 +661,7 @@ class PromptTagsPlugin(Star):
 
         # Tag Name
         tag_name_section = (
-            f"🔖 Tag Name\n<{tag_name}>"
+            f"🔖 Tag Name\n《{tag_name}》"
             if tag_name_valid
             else "🔖 Tag Name\n（未配置）"
         )
