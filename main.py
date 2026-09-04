@@ -2,15 +2,16 @@
 PromptTags - 持久化提示词标签注入插件 (LivingMemory 兼容版)
 
 在每一轮 LLM 请求前：
-1. 清理上一轮注入到对话历史中的所有自定义标签
+1. 无条件扫描所有配置槽位，清理历史中残留的标签内容（无论启用状态）
 2. 将当前已启用的标签内容重新注入到指定位置
 
 支持最多 5 个自定义标签，每个标签可独立配置注入位置。
 
 LivingMemory 兼容策略：
-- 使用 priority=-1000 确保本插件的 on_llm_request 钩子在
-  LivingMemory (priority=0) 之后执行，避免我们注入的标签
-  污染 LivingMemory 的记忆检索查询
+- 清理阶段 priority=1，在 LivingMemory (priority=0) 之前执行，
+  避免我们的标签内容干扰 LivingMemory 的正则匹配
+- 注入阶段 priority=-500，在 LivingMemory 之后执行，
+  避免我们的标签污染 LivingMemory 的记忆检索查询
 - 各自使用互不相同的标签名称，清理正则不会交叉匹配
 
 F(A) = A(F)
@@ -39,19 +40,19 @@ TAG_NAME_PATTERN = re.compile(r"^[^\n\r<>]+$")
     "PromptTags",
     "FelisAbyssalis",
     "持久化提示词标签注入插件 - 自动向 LLM 请求注入自定义标签内容并在下一轮清理",
-    "1.1.1",
+    "2.0.0",
     "https://github.com/EmilyCheoh/astrbot_add_prompt_tags_livingmemory_compatible",
 )
 class PromptTagsPlugin(Star):
     """
     AstrBot 插件：在每一轮 LLM 请求前注入用户定义的 XML 标签内容，
-    并在下一轮自动清理上一轮的残留标签。
+    并在每轮自动清理所有配置槽位的标签残留。
 
     设计原理：
     - 利用 AstrBot 的 on_llm_request 钩子，在 LLM 请求发出前修改
       req.prompt（用户消息）或 req.system_prompt（系统提示词）
-    - 每轮请求前先清理 req.prompt、req.contexts
-      中上一轮注入的标签内容，然后重新注入最新内容
+    - 每轮请求前无条件扫描所有配置槽位，清理上一轮的标签残留，
+      然后将当前已启用的标签重新注入
     - 标签名由用户自定义，格式为 <TagName>...</TagName>
     - 与 LivingMemory 互不干扰：LivingMemory 使用 <RAG-Faiss-Memory>
       标签，我们使用用户自定义名称，双方正则不会交叉匹配
@@ -68,16 +69,51 @@ class PromptTagsPlugin(Star):
         self._tags: list[dict[str, Any]] = []
         self._load_tags()
 
-        # 手动清理标记：当用户发送清理命令时置为 True，
-        # 下一轮 on_llm_request 清理阶段将扫描所有配置槽位
-        # （包括已禁用的标签）执行一次全量清理，然后重置为 False
-        self._full_cleanup_pending: bool = False
-
         logger.info(
             f"【PromptTags 提示词注入】插件初始化完成，"
             f"已加载 {len(self._tags)} 个有效标签"
-            + (f"，顶部声明已启用" if self._disclaimer else "")
+            + ("，顶部声明已启用" if self._disclaimer else "")
         )
+
+    # -----------------------------------------------------------------------
+    # 槽位辅助方法
+    # -----------------------------------------------------------------------
+
+    def _resolve_slot(self, index: int) -> dict | None:
+        """根据编号 1-5 获取配置槽位字典，无效时返回 None。"""
+        slot = self.config.get(f"tag_{index}", {})
+        return slot if isinstance(slot, dict) else None
+
+    @staticmethod
+    def _get_alias(slot: dict) -> str:
+        """获取清理后的 alias。"""
+        return str(slot.get("alias", "")).strip()
+
+    @staticmethod
+    def _get_tag_name(slot: dict) -> str:
+        """获取清理后的 tag_name。"""
+        return str(slot.get("tag_name", "")).strip()
+
+    @staticmethod
+    def _get_content(slot: dict) -> str:
+        """获取清理后的 content，字面 \\n 还原为真正换行。"""
+        content = str(slot.get("content", ""))
+        return content.replace("\\n", "\n").strip()
+
+    @staticmethod
+    def _is_tag_name_valid(tag_name: str) -> bool:
+        """检查 tag_name 是否非空且符合命名规则。"""
+        return bool(tag_name) and bool(TAG_NAME_PATTERN.match(tag_name))
+
+    def _is_tag_valid(self, slot: dict) -> bool:
+        """检查标签配置是否完整有效（tag_name 合法且 content 非空）。"""
+        tag_name = self._get_tag_name(slot)
+        content = self._get_content(slot)
+        return self._is_tag_name_valid(tag_name) and bool(content)
+
+    def _is_tag_active(self, slot: dict) -> bool:
+        """检查标签是否真正处于活动状态（enabled 且 valid）。"""
+        return slot.get("enabled", False) and self._is_tag_valid(slot)
 
     # -----------------------------------------------------------------------
     # 配置加载
@@ -115,13 +151,8 @@ class PromptTagsPlugin(Star):
             if not enabled:
                 continue
 
-            tag_name = str(slot.get("tag_name", "")).strip()
-            content = str(slot.get("content", ""))
-
-            # AstrBot 的 textarea 将用户按 Enter 产生的换行存储为字面的
-            # 两字符序列 "\n"（反斜杠+n），而非真正的换行符。
-            # 需要将其还原为实际换行才能正确注入。
-            content = content.replace("\\n", "\n").strip()
+            tag_name = self._get_tag_name(slot)
+            content = self._get_content(slot)
             position = str(
                 slot.get("injection_position", "user_message_after")
             ).strip()
@@ -133,7 +164,7 @@ class PromptTagsPlugin(Star):
                 )
                 continue
 
-            if not TAG_NAME_PATTERN.match(tag_name):
+            if not self._is_tag_name_valid(tag_name):
                 logger.warning(
                     f"【PromptTags 提示词注入】: {slot_key} 标签名称 '{tag_name}' "
                     f"包含非法字符（不允许换行或尖括号），跳过"
@@ -167,16 +198,15 @@ class PromptTagsPlugin(Star):
                 }
             )
 
-
     # -----------------------------------------------------------------------
     # 全量清理：加载所有配置槽位的标签（忽略 enabled 状态）
     # -----------------------------------------------------------------------
 
     def _load_all_tags_for_cleanup(self) -> list[dict[str, Any]]:
-        """从配置中加载所有标签名称，无论是否启用。
+        """从配置中加载所有有效标签名称，无论是否启用。
 
-        仅用于手动清理命令触发的全量清理，确保已禁用的标签
-        也能从上下文中被清除。返回的字典仅包含清理所需的字段。
+        每轮清理阶段调用，确保已禁用标签的残留内容也被清除。
+        返回的字典仅包含清理所需的字段。
         """
         all_tags: list[dict[str, Any]] = []
         seen_names: set[str] = set()
@@ -186,8 +216,8 @@ class PromptTagsPlugin(Star):
             if not isinstance(slot, dict):
                 continue
 
-            tag_name = str(slot.get("tag_name", "")).strip()
-            if not tag_name or not TAG_NAME_PATTERN.match(tag_name):
+            tag_name = self._get_tag_name(slot)
+            if not tag_name or not self._is_tag_name_valid(tag_name):
                 continue
             if tag_name in seen_names:
                 continue
@@ -209,7 +239,7 @@ class PromptTagsPlugin(Star):
 
     @staticmethod
     def _format_tag(tag: dict[str, Any]) -> str:
-        """将标签格式化为 XML 包裹的字符串，尾部附加换行以与后续内容分隔。"""
+        """将标签格式化为 XML 包裹的字符串。"""
         return f"{tag['header']}\n{tag['content']}\n{tag['footer']}"
 
     # -----------------------------------------------------------------------
@@ -240,7 +270,8 @@ class PromptTagsPlugin(Star):
         清理范围：
         - req.system_prompt
         - req.prompt
-        - req.contexts（对话历史，支持字符串、字典/字符串内容、字典/列表内容三种格式）
+        - req.contexts（对话历史，支持字符串、字典/字符串内容、
+          字典/列表内容三种格式）
 
         Returns:
             清除的片段数量
@@ -381,7 +412,9 @@ class PromptTagsPlugin(Star):
                 removed += 1
 
         # --- 清理 system_prompt ---
-        if hasattr(req, "system_prompt") and isinstance(req.system_prompt, str):
+        if hasattr(req, "system_prompt") and isinstance(
+            req.system_prompt, str
+        ):
             if disclaimer in req.system_prompt:
                 req.system_prompt = self._strip_disclaimer(req.system_prompt)
                 removed += 1
@@ -418,32 +451,241 @@ class PromptTagsPlugin(Star):
         return removed
 
     # -----------------------------------------------------------------------
-    # 手动清理命令
+    # Command Group: /tag (/pt)
     # -----------------------------------------------------------------------
 
-    @filter.command(
-        "cleartags",
-        alias={
-            "cleartag",
-            "removetags",
-            "removetag",
-            "cleanup",
-            "clearup",
-            "clearall",
-            "removeall",
-            "cleanall"
-        },
-    )
-    async def handle_clear_command(self, event: AstrMessageEvent):
-        """手动触发一次全量标签清理（含已禁用的标签）。"""
-        self._full_cleanup_pending = True
+    @filter.command_group("tag", alias={"pt"})
+    def tag(self):
+        pass
 
-        # 重新加载配置以确保使用最新的标签定义
+    @tag.command("on")
+    async def enable_tag(
+        self,
+        event: AstrMessageEvent,
+        index: int,
+    ):
+        """开启指定标签"""
+        if not 1 <= index <= MAX_TAGS:
+            yield event.plain_result("⚠️ 标签编号必须是 1–5。")
+            return
+
+        slot = self._resolve_slot(index)
+        if slot is None:
+            yield event.plain_result("⚠️ 标签编号必须是 1–5。")
+            return
+
+        tag_name = self._get_tag_name(slot)
+        display_name = f" <{tag_name}>" if tag_name else ""
+
+        # 验证 tag_name
+        if not tag_name:
+            yield event.plain_result(
+                f"⚠️ 标签 {index} 缺少 tag_name，无法开启。"
+            )
+            return
+        if not self._is_tag_name_valid(tag_name):
+            yield event.plain_result(
+                f"⚠️ 标签 {index} 的 tag_name 包含非法字符，无法开启。"
+            )
+            return
+
+        # 验证 content
+        content = self._get_content(slot)
+        if not content:
+            yield event.plain_result(
+                f"⚠️ 标签 {index} 缺少 content，无法开启。"
+            )
+            return
+
+        # 幂等检查
+        if slot.get("enabled", False):
+            yield event.plain_result(
+                f"🏷️ 标签 {index}{display_name} 已经处于开启状态。"
+            )
+            return
+
+        # 开启并持久化
+        slot_key = f"tag_{index}"
+        self.config[slot_key]["enabled"] = True
+        self.config.save_config()
+
         self._tags = []
         self._load_tags()
 
         yield event.plain_result(
-            "🧹 已标记全量清理，将在下一条消息时清除所有标签。"
+            f"🏷️ 标签 {index}{display_name} 已开启。"
+        )
+
+    @tag.command("off")
+    async def disable_tag(
+        self,
+        event: AstrMessageEvent,
+        index: int,
+    ):
+        """关闭指定标签"""
+        if not 1 <= index <= MAX_TAGS:
+            yield event.plain_result("⚠️ 标签编号必须是 1–5。")
+            return
+
+        slot = self._resolve_slot(index)
+        if slot is None:
+            yield event.plain_result("⚠️ 标签编号必须是 1–5。")
+            return
+
+        tag_name = self._get_tag_name(slot)
+        display_name = (
+            f" <{tag_name}>"
+            if self._is_tag_name_valid(tag_name)
+            else ""
+        )
+
+        # 幂等检查
+        if not slot.get("enabled", False):
+            msg = f"🏷️ 标签 {index}{display_name} 已经处于关闭状态。"
+            msg += "\n🧹 下一条普通消息仍会检查并清除历史残留。"
+            yield event.plain_result(msg)
+            return
+
+        # 关闭并持久化
+        slot_key = f"tag_{index}"
+        self.config[slot_key]["enabled"] = False
+        self.config.save_config()
+
+        self._tags = []
+        self._load_tags()
+
+        msg = f"🏷️ 标签 {index}{display_name} 已关闭。"
+        msg += "\n🧹 下一条普通消息会清除历史中残留的标签。"
+        yield event.plain_result(msg)
+
+    @tag.command("view", alias={"check"})
+    async def view_tags(
+        self,
+        event: AstrMessageEvent,
+        index: int | None = None,
+    ):
+        """查看标签状态"""
+        # 带编号：显示单个标签详情
+        if index is not None:
+            if (
+                not isinstance(index, int)
+                or not 1 <= index <= MAX_TAGS
+            ):
+                yield event.plain_result("⚠️ 标签编号必须是 1–5。")
+                return
+            yield event.plain_result(self._render_tag_detail(index))
+            return
+
+        # 无编号：显示总览
+        yield event.plain_result(self._render_tag_overview())
+
+    @tag.command("help")
+    async def show_tag_help(self, event: AstrMessageEvent):
+        """显示 PromptTags 指令帮助"""
+        help_text = (
+            "📌 PromptTags 指令\n\n"
+            "/tag on <1-5>       开启指定标签\n"
+            "/tag off <1-5>      关闭指定标签\n"
+            "/tag view           查看全部标签及状态\n"
+            "/tag view <1-5>     查看指定标签的完整内容\n"
+            "/tag check          与 /tag view 相同\n"
+            "/tag help           显示这份帮助\n\n"
+            "/pt 可以代替 /tag。\n"
+            "例如：/pt view 2"
+        )
+        yield event.plain_result(help_text)
+
+    # -----------------------------------------------------------------------
+    # 展示渲染
+    # -----------------------------------------------------------------------
+
+    def _render_tag_overview(self) -> str:
+        """渲染标签总览。"""
+        lines = ["🏷️ PromptTags 状态\n"]
+
+        for i, slot_key in enumerate(TAG_SLOT_KEYS, start=1):
+            slot = self.config.get(slot_key, {})
+            if not isinstance(slot, dict):
+                slot = {}
+
+            alias = self._get_alias(slot)
+            tag_name = self._get_tag_name(slot)
+            tag_name_valid = self._is_tag_name_valid(tag_name)
+            content = self._get_content(slot)
+            has_content = bool(content)
+            enabled = slot.get("enabled", False)
+            active = self._is_tag_active(slot)
+
+            # 构建显示名
+            if alias and tag_name_valid:
+                display = f"{alias} — <{tag_name}>"
+            elif not alias and tag_name_valid:
+                display = f"{tag_name} — <{tag_name}>"
+            elif alias and not tag_name_valid:
+                display = f"{alias} — 未配置"
+            else:
+                display = "未配置"
+
+            # 构建状态后缀
+            if active:
+                suffix = " ✅"
+            elif enabled and tag_name_valid and not has_content:
+                suffix = " ⚠️ 内容为空"
+            elif enabled and not (tag_name_valid and has_content):
+                suffix = " ⚠️ 配置无效"
+            else:
+                suffix = ""
+
+            lines.append(f"{i}. {display}{suffix}")
+
+        return "\n".join(lines)
+
+    def _render_tag_detail(self, index: int) -> str:
+        """渲染单个标签详情。"""
+        slot = self._resolve_slot(index)
+        if slot is None:
+            slot = {}
+
+        alias = self._get_alias(slot)
+        tag_name = self._get_tag_name(slot)
+        tag_name_valid = self._is_tag_name_valid(tag_name)
+        content = self._get_content(slot)
+        enabled = slot.get("enabled", False)
+        valid = self._is_tag_valid(slot)
+        active = enabled and valid
+
+        # Alias
+        alias_section = (
+            f"🏷️ Alias\n{alias}" if alias else "🏷️ Alias\n（未填写）"
+        )
+
+        # Tag Name
+        tag_name_section = (
+            f"🔖 Tag Name\n<{tag_name}>"
+            if tag_name_valid
+            else "🔖 Tag Name\n（未配置）"
+        )
+
+        # Status
+        if active:
+            status_section = "⚡️ Status\nON ✅"
+        elif enabled and not valid:
+            status_section = "⚡️ Status\nON ⚠️ 配置无效"
+        else:
+            status_section = "⚡️ Status\nOFF"
+
+        # Content
+        if content:
+            content_section = f'📝 Content\n"""\n{content}\n"""'
+        else:
+            content_section = "📝 Content\n（空）"
+
+        return (
+            f"📌 PromptTag #{index}\n\n"
+            f"{alias_section}\n\n"
+            f"{tag_name_section}\n\n"
+            f"{status_section}\n\n"
+            f"{content_section}"
         )
 
     # -----------------------------------------------------------------------
@@ -457,12 +699,8 @@ class PromptTagsPlugin(Star):
         """
         [事件钩子 - 清理阶段] 在 LLM 请求前，优先于 LivingMemory 执行。
 
-        仅负责从 req.prompt / req.contexts 中
-        清除上一轮注入的旧标签，不做任何新注入。
-
-        当 _full_cleanup_pending 为 True 时，扫描所有配置槽位
-        （包括已禁用的标签）执行一次全量清理，确保已禁用标签
-        的残留内容也被移除。
+        每轮无条件扫描所有配置槽位（包括已禁用的标签），
+        确保已关闭标签的残留内容也被自动清除。
 
         priority=1 确保本钩子在 LivingMemory (priority=0) 之前执行。
         这样做的原因：
@@ -473,12 +711,7 @@ class PromptTagsPlugin(Star):
           吃掉中间所有内容，导致对话历史被截断。
           先于 LivingMemory 清理我们的标签，可从根本上避免此误匹配。
         """
-        # 确定本轮使用的清理范围
-        if self._full_cleanup_pending:
-            cleanup_tags = self._load_all_tags_for_cleanup()
-            self._full_cleanup_pending = False
-        else:
-            cleanup_tags = self._tags
+        cleanup_tags = self._load_all_tags_for_cleanup()
 
         if not cleanup_tags and not self._disclaimer:
             return
@@ -553,7 +786,9 @@ class PromptTagsPlugin(Star):
                     # 在 RAG 标签前插入，保留换行分隔
                     before_rag = prompt[:rag_pos].rstrip()
                     from_rag = prompt[rag_pos:]
-                    req.prompt = before_rag + "\n\n" + block + "\n\n" + from_rag
+                    req.prompt = (
+                        before_rag + "\n\n" + block + "\n\n" + from_rag
+                    )
                 else:
                     req.prompt = prompt + "\n\n" + block
                 logger.debug(
@@ -561,9 +796,11 @@ class PromptTagsPlugin(Star):
                     f"{len(by_position['user_message_after'])} 个标签"
                 )
 
-            # --- 顶部声明注入（最后执行，确保它在 req.prompt 的绝对顶部）---
+            # --- 顶部声明注入（最后执行，确保在 req.prompt 绝对顶部）---
             if self._disclaimer:
-                req.prompt = self._disclaimer + "\n\n" + (req.prompt or "")
+                req.prompt = (
+                    self._disclaimer + "\n\n" + (req.prompt or "")
+                )
                 logger.debug("【PromptTags 提示词注入】注入顶部声明")
 
         except Exception as e:

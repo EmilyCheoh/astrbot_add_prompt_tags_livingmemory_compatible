@@ -1,5 +1,8 @@
 # Changelog
 
+## Sept 5
+添加commands
+
 ## May 31
 
 removed system_prompt injection logic + removed extra `\n`

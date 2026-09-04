@@ -23,6 +23,12 @@
         "hint": "第 1 个注入标签的配置。",
         "type": "object",
         "items": {
+            "alias": {
+                "description": "备注名称",
+                "hint": "用于在配置页面和标签状态中区分这个标签，不影响标签开关、XML 名称、注入或清理行为。",
+                "type": "string",
+                "default": ""
+            },
             "enabled": {
                 "description": "启用",
                 "hint": "是否启用此标签的注入。",
@@ -31,7 +37,7 @@
             },
             "injection_position": {
                 "description": "注入位置",
-                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后；system_prompt: 追加到系统提示词。",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后。",
                 "type": "string",
                 "default": "user_message_after",
                 "options": [
@@ -58,6 +64,12 @@
         "hint": "第 2 个注入标签的配置。",
         "type": "object",
         "items": {
+            "alias": {
+                "description": "备注名称",
+                "hint": "用于在配置页面和标签状态中区分这个标签，不影响标签开关、XML 名称、注入或清理行为。",
+                "type": "string",
+                "default": ""
+            },
             "enabled": {
                 "description": "启用",
                 "hint": "是否启用此标签的注入。",
@@ -66,13 +78,12 @@
             },
             "injection_position": {
                 "description": "注入位置",
-                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后；system_prompt: 追加到系统提示词。",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后。",
                 "type": "string",
                 "default": "user_message_after",
                 "options": [
                     "user_message_before",
-                    "user_message_after",
-                    "system_prompt"
+                    "user_message_after"
                 ]
             },
             "tag_name": {
@@ -94,6 +105,12 @@
         "hint": "第 3 个注入标签的配置。",
         "type": "object",
         "items": {
+            "alias": {
+                "description": "备注名称",
+                "hint": "用于在配置页面和标签状态中区分这个标签，不影响标签开关、XML 名称、注入或清理行为。",
+                "type": "string",
+                "default": ""
+            },
             "enabled": {
                 "description": "启用",
                 "hint": "是否启用此标签的注入。",
@@ -102,13 +119,12 @@
             },
             "injection_position": {
                 "description": "注入位置",
-                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后；system_prompt: 追加到系统提示词。",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后。",
                 "type": "string",
                 "default": "user_message_after",
                 "options": [
                     "user_message_before",
-                    "user_message_after",
-                    "system_prompt"
+                    "user_message_after"
                 ]
             },
             "tag_name": {
@@ -130,6 +146,12 @@
         "hint": "第 4 个注入标签的配置。",
         "type": "object",
         "items": {
+            "alias": {
+                "description": "备注名称",
+                "hint": "用于在配置页面和标签状态中区分这个标签，不影响标签开关、XML 名称、注入或清理行为。",
+                "type": "string",
+                "default": ""
+            },
             "enabled": {
                 "description": "启用",
                 "hint": "是否启用此标签的注入。",
@@ -138,13 +160,12 @@
             },
             "injection_position": {
                 "description": "注入位置",
-                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后；system_prompt: 追加到系统提示词。",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后。",
                 "type": "string",
                 "default": "user_message_after",
                 "options": [
                     "user_message_before",
-                    "user_message_after",
-                    "system_prompt"
+                    "user_message_after"
                 ]
             },
             "tag_name": {
@@ -166,6 +187,12 @@
         "hint": "第 5 个注入标签的配置。",
         "type": "object",
         "items": {
+            "alias": {
+                "description": "备注名称",
+                "hint": "用于在配置页面和标签状态中区分这个标签，不影响标签开关、XML 名称、注入或清理行为。",
+                "type": "string",
+                "default": ""
+            },
             "enabled": {
                 "description": "启用",
                 "hint": "是否启用此标签的注入。",
@@ -174,13 +201,12 @@
             },
             "injection_position": {
                 "description": "注入位置",
-                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后；system_prompt: 追加到系统提示词。",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后。",
                 "type": "string",
                 "default": "user_message_after",
                 "options": [
                     "user_message_before",
-                    "user_message_after",
-                    "system_prompt"
+                    "user_message_after"
                 ]
             },
             "tag_name": {
