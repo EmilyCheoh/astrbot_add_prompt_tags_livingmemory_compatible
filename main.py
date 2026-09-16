@@ -623,7 +623,7 @@ class PromptTagsPlugin(Star):
         if not match:
             yield event.plain_result(
                 "⚠️ 格式错误。\n"
-                "修改名称：/pt edit 1 name 《New-Tag-Name》\n"
+                "修改名称：/pt edit 1 name <New-Tag-Name>\n"
                 "修改内容：/pt edit 1 content {新内容}"
             )
             return
@@ -659,7 +659,7 @@ class PromptTagsPlugin(Star):
 
             self.config[f"tag_{index}"]["tag_name"] = value
             success_message = (
-                f"🔖 标签 {index} 的 Tag Name 已更新为 《{value}》。"
+                f"🔖 标签 {index} 的 Tag Name 已更新为 <{value}>。"
             )
         else:
             if not (value.startswith("{") and value.endswith("}")):
@@ -712,16 +712,16 @@ class PromptTagsPlugin(Star):
         """显示 PromptTags 指令帮助"""
         help_text = (
             "📌 PromptTags 指令\n\n"
-            "/tag on 《1-5》       开启指定标签\n"
-            "/tag off 《1-5》      关闭指定标签\n"
-            "/tag edit 《1-5》 name 《Tag-Name》\n"
+            "/tag on <1-5>       开启指定标签\n"
+            "/tag off <1-5>      关闭指定标签\n"
+            "/tag edit <1-5> name <Tag-Name>\n"
             "                      修改标签名称\n"
-            "/tag edit 《1-5》 content {内容}\n"
+            "/tag edit <1-5> content {内容}\n"
             "                      修改标签内容，支持换行\n"
             "/tag on top         开启顶部声明\n"
             "/tag off top        关闭顶部声明\n"
             "/tag view           查看全部标签及状态\n"
-            "/tag view 《1-5》     查看指定标签的完整内容\n"
+            "/tag view <1-5>     查看指定标签的完整内容\n"
             "/tag view top       查看顶部声明的状态和正文\n"
             "/tag check          与 /tag view 相同\n"
             "/tag help           显示这份帮助\n\n"
