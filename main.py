@@ -121,6 +121,7 @@ class PromptTagsPlugin(Star):
 
     def _load_disclaimer(self) -> None:
         """从插件配置中加载顶部声明文本。"""
+        self._disclaimer = None
         slot = self.config.get("header_disclaimer", {})
         if not isinstance(slot, dict):
             return
@@ -451,10 +452,10 @@ class PromptTagsPlugin(Star):
         return removed
 
     # -----------------------------------------------------------------------
-    # Command Group: /tag (/pt)
+    # Command Group: /tag (/pt, /tags)
     # -----------------------------------------------------------------------
 
-    @filter.command_group("tag", alias={"pt"})
+    @filter.command_group("tag", alias={"pt", "tags"})
     def tag(self):
         pass
 
@@ -462,9 +463,37 @@ class PromptTagsPlugin(Star):
     async def enable_tag(
         self,
         event: AstrMessageEvent,
-        index: int,
+        target: str,
     ):
-        """开启指定标签"""
+        """开启指定标签或顶部声明"""
+        if target.lower() == "top":
+            slot = self.config.get("header_disclaimer", {})
+            if not isinstance(slot, dict):
+                yield event.plain_result("⚠️ 顶部声明配置无效。")
+                return
+
+            content = str(slot.get("content", "")).strip()
+            if not content:
+                yield event.plain_result("⚠️ 顶部声明内容为空，无法开启。")
+                return
+
+            if slot.get("enabled", False):
+                yield event.plain_result("📢 顶部声明已经处于开启状态。")
+                return
+
+            self.config["header_disclaimer"]["enabled"] = True
+            self.config.save_config()
+            self._load_disclaimer()
+
+            yield event.plain_result("📢 顶部声明已开启。")
+            return
+
+        try:
+            index = int(target)
+        except (TypeError, ValueError):
+            yield event.plain_result("⚠️ 请输入标签编号 1–5，或 top。")
+            return
+
         if not 1 <= index <= MAX_TAGS:
             yield event.plain_result("⚠️ 标签编号必须是 1–5。")
             return
@@ -520,9 +549,32 @@ class PromptTagsPlugin(Star):
     async def disable_tag(
         self,
         event: AstrMessageEvent,
-        index: int,
+        target: str,
     ):
-        """关闭指定标签"""
+        """关闭指定标签或顶部声明"""
+        if target.lower() == "top":
+            slot = self.config.get("header_disclaimer", {})
+            if not isinstance(slot, dict):
+                yield event.plain_result("⚠️ 顶部声明配置无效。")
+                return
+
+            if not slot.get("enabled", False):
+                yield event.plain_result("📢 顶部声明已经处于关闭状态。")
+                return
+
+            self.config["header_disclaimer"]["enabled"] = False
+            self.config.save_config()
+            self._load_disclaimer()
+
+            yield event.plain_result("📢 顶部声明已关闭。")
+            return
+
+        try:
+            index = int(target)
+        except (TypeError, ValueError):
+            yield event.plain_result("⚠️ 请输入标签编号 1–5，或 top。")
+            return
+
         if not 1 <= index <= MAX_TAGS:
             yield event.plain_result("⚠️ 标签编号必须是 1–5。")
             return
@@ -558,19 +610,95 @@ class PromptTagsPlugin(Star):
         msg += "\n🧹 下一条普通消息会清除历史中残留的标签。"
         yield event.plain_result(msg)
 
+    @tag.command("edit")
+    async def edit_tag(self, event: AstrMessageEvent):
+        """修改指定标签的 tag_name 或 content"""
+        raw_message = event.message_str or ""
+        match = re.fullmatch(
+            r"\s*/?(?:tag|pt|tags)\s+edit\s+(\d+)\s+"
+            r"(name|content)\s+([\s\S]*)\s*",
+            raw_message,
+            flags=re.IGNORECASE,
+        )
+        if not match:
+            yield event.plain_result(
+                "⚠️ 格式错误。\n"
+                "修改名称：/pt edit 1 name 《New-Tag-Name》\n"
+                "修改内容：/pt edit 1 content {新内容}"
+            )
+            return
+
+        index = int(match.group(1))
+        field = match.group(2).lower()
+        value = match.group(3).strip()
+
+        if not 1 <= index <= MAX_TAGS:
+            yield event.plain_result("⚠️ 标签编号必须是 1–5。")
+            return
+
+        slot = self._resolve_slot(index)
+        if slot is None:
+            yield event.plain_result("⚠️ 标签编号必须是 1–5。")
+            return
+
+        if field == "name":
+            has_angle_brackets = (
+                value.startswith("<") and value.endswith(">")
+            )
+            has_book_title_brackets = (
+                value.startswith("《") and value.endswith("》")
+            )
+            if has_angle_brackets or has_book_title_brackets:
+                value = value[1:-1].strip()
+
+            if not self._is_tag_name_valid(value):
+                yield event.plain_result(
+                    "⚠️ 标签名称不能为空，也不能包含换行或尖括号。"
+                )
+                return
+
+            self.config[f"tag_{index}"]["tag_name"] = value
+            success_message = (
+                f"🔖 标签 {index} 的 Tag Name 已更新为 《{value}》。"
+            )
+        else:
+            if not (value.startswith("{") and value.endswith("}")):
+                yield event.plain_result(
+                    "⚠️ 请把完整内容放在最外层大括号里。\n"
+                    "例如：/pt edit 1 content {新内容}"
+                )
+                return
+
+            content = value[1:-1].strip()
+            self.config[f"tag_{index}"]["content"] = content
+            success_message = f"📝 标签 {index} 的 Content 已更新。"
+
+        self.config.save_config()
+        self._load_tags()
+        yield event.plain_result(success_message)
+
     @tag.command("view", alias={"check"})
     async def view_tags(
         self,
         event: AstrMessageEvent,
-        index: int | None = None,
+        target: str | None = None,
     ):
         """查看标签状态"""
-        # 带编号：显示单个标签详情
-        if index is not None:
-            if (
-                not isinstance(index, int)
-                or not 1 <= index <= MAX_TAGS
-            ):
+        # 带目标：显示顶部声明或单个标签详情
+        if target is not None:
+            if isinstance(target, str) and target.lower() == "top":
+                yield event.plain_result(self._render_disclaimer_detail())
+                return
+
+            try:
+                index = int(target)
+            except (TypeError, ValueError):
+                yield event.plain_result(
+                    "⚠️ 请输入标签编号 1–5，或 top。"
+                )
+                return
+
+            if not 1 <= index <= MAX_TAGS:
                 yield event.plain_result("⚠️ 标签编号必须是 1–5。")
                 return
             yield event.plain_result(self._render_tag_detail(index))
@@ -584,13 +712,20 @@ class PromptTagsPlugin(Star):
         """显示 PromptTags 指令帮助"""
         help_text = (
             "📌 PromptTags 指令\n\n"
-            "/tag on <1-5>       开启指定标签\n"
-            "/tag off <1-5>      关闭指定标签\n"
+            "/tag on 《1-5》       开启指定标签\n"
+            "/tag off 《1-5》      关闭指定标签\n"
+            "/tag edit 《1-5》 name 《Tag-Name》\n"
+            "                      修改标签名称\n"
+            "/tag edit 《1-5》 content {内容}\n"
+            "                      修改标签内容，支持换行\n"
+            "/tag on top         开启顶部声明\n"
+            "/tag off top        关闭顶部声明\n"
             "/tag view           查看全部标签及状态\n"
-            "/tag view <1-5>     查看指定标签的完整内容\n"
+            "/tag view 《1-5》     查看指定标签的完整内容\n"
+            "/tag view top       查看顶部声明的状态和正文\n"
             "/tag check          与 /tag view 相同\n"
             "/tag help           显示这份帮助\n\n"
-            "/pt 可以代替 /tag。\n"
+            "/tag、/pt、/tags 可以互相替代。\n"
             "例如：/pt view 2"
         )
         yield event.plain_result(help_text)
@@ -601,7 +736,17 @@ class PromptTagsPlugin(Star):
 
     def _render_tag_overview(self) -> str:
         """渲染标签总览。"""
-        lines = ["🏷️ PromptTags 状态\n"]
+        disclaimer_slot = self.config.get("header_disclaimer", {})
+        disclaimer_enabled = (
+            isinstance(disclaimer_slot, dict)
+            and disclaimer_slot.get("enabled", False)
+        )
+        disclaimer_status = "ON ✅" if disclaimer_enabled else "OFF"
+        lines = [
+            "🏷️ PromptTags 状态\n",
+            f"📢 顶部声明：{disclaimer_status}",
+            "",
+        ]
 
         for i, slot_key in enumerate(TAG_SLOT_KEYS, start=1):
             slot = self.config.get(slot_key, {})
@@ -639,6 +784,28 @@ class PromptTagsPlugin(Star):
             lines.append(f"{i}. {display}{suffix}")
 
         return "\n".join(lines)
+
+    def _render_disclaimer_detail(self) -> str:
+        """渲染顶部声明详情。"""
+        slot = self.config.get("header_disclaimer", {})
+        if not isinstance(slot, dict):
+            slot = {}
+
+        enabled = slot.get("enabled", False)
+        content = str(slot.get("content", ""))
+        content = content.replace("\\n", "\n").strip()
+        status = "ON ✅" if enabled else "OFF"
+        content_section = (
+            f'📝 Content\n"""\n{content}\n"""'
+            if content
+            else "📝 Content\n（空）"
+        )
+
+        return (
+            "📢 顶部声明\n\n"
+            f"⚡️ Status\n{status}\n\n"
+            f"{content_section}"
+        )
 
     def _render_tag_detail(self, index: int) -> str:
         """渲染单个标签详情。"""

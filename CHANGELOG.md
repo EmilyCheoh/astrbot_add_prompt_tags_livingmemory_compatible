@@ -1,5 +1,8 @@
 # Changelog
 
+## Sept 16
+command可以edit
+
 ## Sept 5
 添加commands
 
