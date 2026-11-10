@@ -572,16 +572,16 @@ class PromptTagsPlugin(Star):
         try:
             index = int(target)
         except (TypeError, ValueError):
-            yield event.plain_result("⚠️ 请输入标签编号 1–5，或 top。")
+            yield event.plain_result("⚠️ 请输入标签编号 1-10，或 top。")
             return
 
         if not 1 <= index <= MAX_TAGS:
-            yield event.plain_result("⚠️ 标签编号必须是 1–5。")
+            yield event.plain_result("⚠️ 标签编号必须是 1-10。")
             return
 
         slot = self._resolve_slot(index)
         if slot is None:
-            yield event.plain_result("⚠️ 标签编号必须是 1–5。")
+            yield event.plain_result("⚠️ 标签编号必须是 1-10。")
             return
 
         tag_name = self._get_tag_name(slot)
@@ -633,12 +633,12 @@ class PromptTagsPlugin(Star):
         value = match.group(3).strip()
 
         if not 1 <= index <= MAX_TAGS:
-            yield event.plain_result("⚠️ 标签编号必须是 1–5。")
+            yield event.plain_result("⚠️ 标签编号必须是 1-10。")
             return
 
         slot = self._resolve_slot(index)
         if slot is None:
-            yield event.plain_result("⚠️ 标签编号必须是 1–5。")
+            yield event.plain_result("⚠️ 标签编号必须是 1-10。")
             return
 
         if field == "name":
@@ -694,12 +694,12 @@ class PromptTagsPlugin(Star):
                 index = int(target)
             except (TypeError, ValueError):
                 yield event.plain_result(
-                    "⚠️ 请输入标签编号 1–5，或 top。"
+                    "⚠️ 请输入标签编号 1-10，或 top。"
                 )
                 return
 
             if not 1 <= index <= MAX_TAGS:
-                yield event.plain_result("⚠️ 标签编号必须是 1–5。")
+                yield event.plain_result("⚠️ 标签编号必须是 1-10。")
                 return
             yield event.plain_result(self._render_tag_detail(index))
             return
