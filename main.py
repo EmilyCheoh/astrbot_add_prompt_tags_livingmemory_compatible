@@ -80,7 +80,7 @@ class PromptTagsPlugin(Star):
     # -----------------------------------------------------------------------
 
     def _resolve_slot(self, index: int) -> dict | None:
-        """根据编号 1-5 获取配置槽位字典，无效时返回 None。"""
+        """根据编号 1-10 获取配置槽位字典，无效时返回 None。"""
         slot = self.config.get(f"tag_{index}", {})
         return slot if isinstance(slot, dict) else None
 
@@ -491,16 +491,16 @@ class PromptTagsPlugin(Star):
         try:
             index = int(target)
         except (TypeError, ValueError):
-            yield event.plain_result("⚠️ 请输入标签编号 1–5，或 top。")
+            yield event.plain_result("⚠️ 请输入标签编号 1–10，或 top。")
             return
 
         if not 1 <= index <= MAX_TAGS:
-            yield event.plain_result("⚠️ 标签编号必须是 1–5。")
+            yield event.plain_result("⚠️ 标签编号必须是 1–10。")
             return
 
         slot = self._resolve_slot(index)
         if slot is None:
-            yield event.plain_result("⚠️ 标签编号必须是 1–5。")
+            yield event.plain_result("⚠️ 标签编号必须是 1–10。")
             return
 
         tag_name = self._get_tag_name(slot)
@@ -712,16 +712,16 @@ class PromptTagsPlugin(Star):
         """显示 PromptTags 指令帮助"""
         help_text = (
             "📌 PromptTags 指令\n\n"
-            "/tag on <1-5>       开启指定标签\n"
-            "/tag off <1-5>      关闭指定标签\n"
-            "/tag edit <1-5> name <Tag-Name>\n"
+            "/tag on <1-10>       开启指定标签\n"
+            "/tag off <1-10>      关闭指定标签\n"
+            "/tag edit <1-10> name <Tag-Name>\n"
             "                      修改标签名称\n"
-            "/tag edit <1-5> content {内容}\n"
+            "/tag edit <1-10> content {内容}\n"
             "                      修改标签内容，支持换行\n"
             "/tag on top         开启顶部声明\n"
             "/tag off top        关闭顶部声明\n"
             "/tag view           查看全部标签及状态\n"
-            "/tag view <1-5>     查看指定标签的完整内容\n"
+            "/tag view <1-10>     查看指定标签的完整内容\n"
             "/tag view top       查看顶部声明的状态和正文\n"
             "/tag check          与 /tag view 相同\n"
             "/tag help           显示这份帮助\n\n"
