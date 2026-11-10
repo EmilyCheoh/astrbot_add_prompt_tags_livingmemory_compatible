@@ -222,5 +222,210 @@
                 "default": ""
             }
         }
+    },
+    "tag_6": {
+        "description": "标签 6",
+        "hint": "第 6 个注入标签的配置。",
+        "type": "object",
+        "items": {
+            "alias": {
+                "description": "备注名称",
+                "hint": "用于在配置页面和标签状态中区分这个标签，不影响标签开关、XML 名称、注入或清理行为。",
+                "type": "string",
+                "default": ""
+            },
+            "enabled": {
+                "description": "启用",
+                "hint": "是否启用此标签的注入。",
+                "type": "bool",
+                "default": false
+            },
+            "injection_position": {
+                "description": "注入位置",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后。",
+                "type": "string",
+                "default": "user_message_after",
+                "options": [
+                    "user_message_before",
+                    "user_message_after"
+                ]
+            },
+            "tag_name": {
+                "description": "标签名称",
+                "hint": "标签的 XML 名称，例如 Felis-Abyssalis-Preference 或 Behavior-Guidelines。不需要包含尖括号。",
+                "type": "string",
+                "default": ""
+            },
+            "content": {
+                "description": "标签内容",
+                "hint": "注入到标签中的实际提示词内容。",
+                "type": "string",
+                "default": ""
+            }
+        }
+    },
+    "tag_7": {
+        "description": "标签 7",
+        "hint": "第 7 个注入标签的配置。",
+        "type": "object",
+        "items": {
+            "alias": {
+                "description": "备注名称",
+                "hint": "用于在配置页面和标签状态中区分这个标签，不影响标签开关、XML 名称、注入或清理行为。",
+                "type": "string",
+                "default": ""
+            },
+            "enabled": {
+                "description": "启用",
+                "hint": "是否启用此标签的注入。",
+                "type": "bool",
+                "default": false
+            },
+            "injection_position": {
+                "description": "注入位置",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后。",
+                "type": "string",
+                "default": "user_message_after",
+                "options": [
+                    "user_message_before",
+                    "user_message_after"
+                ]
+            },
+            "tag_name": {
+                "description": "标签名称",
+                "hint": "标签的 XML 名称，例如 Felis-Abyssalis-Preference 或 Behavior-Guidelines。不需要包含尖括号。",
+                "type": "string",
+                "default": ""
+            },
+            "content": {
+                "description": "标签内容",
+                "hint": "注入到标签中的实际提示词内容。",
+                "type": "string",
+                "default": ""
+            }
+        }
+    },
+    "tag_8": {
+        "description": "标签 8",
+        "hint": "第 8 个注入标签的配置。",
+        "type": "object",
+        "items": {
+            "alias": {
+                "description": "备注名称",
+                "hint": "用于在配置页面和标签状态中区分这个标签，不影响标签开关、XML 名称、注入或清理行为。",
+                "type": "string",
+                "default": ""
+            },
+            "enabled": {
+                "description": "启用",
+                "hint": "是否启用此标签的注入。",
+                "type": "bool",
+                "default": false
+            },
+            "injection_position": {
+                "description": "注入位置",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后。",
+                "type": "string",
+                "default": "user_message_after",
+                "options": [
+                    "user_message_before",
+                    "user_message_after"
+                ]
+            },
+            "tag_name": {
+                "description": "标签名称",
+                "hint": "标签的 XML 名称，例如 Felis-Abyssalis-Preference 或 Behavior-Guidelines。不需要包含尖括号。",
+                "type": "string",
+                "default": ""
+            },
+            "content": {
+                "description": "标签内容",
+                "hint": "注入到标签中的实际提示词内容。",
+                "type": "string",
+                "default": ""
+            }
+        }
+    },
+    "tag_9": {
+        "description": "标签 9",
+        "hint": "第 9 个注入标签的配置。",
+        "type": "object",
+        "items": {
+            "alias": {
+                "description": "备注名称",
+                "hint": "用于在配置页面和标签状态中区分这个标签，不影响标签开关、XML 名称、注入或清理行为。",
+                "type": "string",
+                "default": ""
+            },
+            "enabled": {
+                "description": "启用",
+                "hint": "是否启用此标签的注入。",
+                "type": "bool",
+                "default": false
+            },
+            "injection_position": {
+                "description": "注入位置",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后。",
+                "type": "string",
+                "default": "user_message_after",
+                "options": [
+                    "user_message_before",
+                    "user_message_after"
+                ]
+            },
+            "tag_name": {
+                "description": "标签名称",
+                "hint": "标签的 XML 名称，例如 Felis-Abyssalis-Preference 或 Behavior-Guidelines。不需要包含尖括号。",
+                "type": "string",
+                "default": ""
+            },
+            "content": {
+                "description": "标签内容",
+                "hint": "注入到标签中的实际提示词内容。",
+                "type": "string",
+                "default": ""
+            }
+        }
+    },
+    "tag_10": {
+        "description": "标签 10",
+        "hint": "第 10 个注入标签的配置。",
+        "type": "object",
+        "items": {
+            "alias": {
+                "description": "备注名称",
+                "hint": "用于在配置页面和标签状态中区分这个标签，不影响标签开关、XML 名称、注入或清理行为。",
+                "type": "string",
+                "default": ""
+            },
+            "enabled": {
+                "description": "启用",
+                "hint": "是否启用此标签的注入。",
+                "type": "bool",
+                "default": false
+            },
+            "injection_position": {
+                "description": "注入位置",
+                "hint": "标签内容注入到 LLM 请求的位置。user_message_before: 消息前；user_message_after: 消息后。",
+                "type": "string",
+                "default": "user_message_after",
+                "options": [
+                    "user_message_before",
+                    "user_message_after"
+                ]
+            },
+            "tag_name": {
+                "description": "标签名称",
+                "hint": "标签的 XML 名称，例如 Felis-Abyssalis-Preference 或 Behavior-Guidelines。不需要包含尖括号。",
+                "type": "string",
+                "default": ""
+            },
+            "content": {
+                "description": "标签内容",
+                "hint": "注入到标签中的实际提示词内容。",
+                "type": "string",
+                "default": ""
+            }
+        }
     }
 }
